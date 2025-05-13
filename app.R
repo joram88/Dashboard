@@ -3,6 +3,7 @@ library(shinydashboard)
 library(tidyverse)
 library(lubridate)
 library(alfred)
+library(readr)
 library(gridExtra)
 library(quantmod)
 library(zoo)
@@ -80,9 +81,9 @@ ui <- dashboardPage(skin = "yellow",
                     header = dashboardHeader(title = "JRP's Dashboard"),
                     sidebar = dashboardSidebar(sidebarMenu(id = "tabs", style = "position:fixed;width:220px;",
                             menuItem("Main Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-                            menuItem("Econ (WIP)", tabName = "econ", icon = icon("th")),
-                            menuItem("Climate (WIP)", tabName = "climate", icon = icon("th")),
-                            menuItem("Info (WIP)", tabName = "info", icon = icon("question")),
+                            menuItem("Econ", tabName = "econ", icon = icon("th")),
+                            menuItem("Climate", tabName = "climate", icon = icon("th")),
+                            menuItem("Info", tabName = "info", icon = icon("question")),
                             fluidPage(checkboxInput("Historical", "Historical Data", FALSE)),
                             fluidPage(checkboxInput("Forecast", "Forecast (WIP)", FALSE))
                     )),
@@ -569,7 +570,7 @@ server <- function(input, output) {
                         ylab("Index")+
                         xlab("")+
                         scale_x_date(date_labels = "%b %Y")+
-                        labs(title = "Industrial Production")+
+                        labs(title = "Industrial Production Total Index")+
                         theme_minimal()
                 
                 if(input$Forecast == TRUE){
@@ -821,7 +822,7 @@ server <- function(input, output) {
                 
         
         hurr <- get_hurricanes()
-        sealevel <- get_sealevel()
+        #sealevel <- get_sealevel()
         temps <- get_temp()
         
         temps <- temps %>% 
@@ -843,8 +844,8 @@ server <- function(input, output) {
                         carbon_AR <- auto.arima(carbon_ts)
                         carbon_for <- forecast(carbon_AR, h = 12)
                         carbon_model <- data.frame(Value=as.numeric(carbon_for$mean, check.names = FALSE), 
-                                                  lower = as.numeric(carbon_for$lower[,1]),
-                                                  upper = as.numeric(carbon_for$upper[,1]))
+                                                 lower = as.numeric(carbon_for$lower[,1]),
+                        upper = as.numeric(carbon_for$upper[,1]))
                         carbon_model$date <- last(carbon$date) %m+% months(0:11)
                         
                 } 
@@ -904,7 +905,14 @@ server <- function(input, output) {
                         theme_minimal()
                 
                 if(input$Forecast == TRUE){
-                        p19 <- p19+
+                        p19 <- emissions %>% 
+                            ggplot(mapping = aes(x = year, y = co2))+
+                            geom_line()+
+                            ylab("Gigatons")+
+                            xlab("")+
+                            #scale_x_date(date_labels = "%Y")+
+                            labs(title = "US CO2 Total Emissions")+
+                            theme_minimal()+
                                 geom_line(data = emissions_model, aes(x = year, y = Value, color = "red"))+
                                 theme(legend.position = "none")
                         
@@ -958,33 +966,38 @@ server <- function(input, output) {
                 #Sealevels
                 
                 if(input$Forecast == TRUE){
-                        sealevel_ts <- as.ts(sealevel['gmsl'])
-                        sealevel_AR <- auto.arima(sealevel_ts)
-                        sealevel_for <- forecast(sealevel_AR, h = 6)
-                        sealevel_model <- data.frame(Value=as.numeric(sealevel_for$mean, check.names = FALSE), 
-                                                 lower = as.numeric(sealevel_for$lower[,1]),
-                                                 upper = as.numeric(sealevel_for$upper[,1]))
-                        sealevel_model$date <- last(sealevel$date) + 0:5
+                       # sealevel_ts <- as.ts(sealevel['gmsl'])
+                        #sealevel_AR <- auto.arima(sealevel_ts)
+                        #sealevel_for <- forecast(sealevel_AR, h = 6)
+                       # sealevel_model <- data.frame(Value=as.numeric(sealevel_for$mean, check.names = FALSE), 
+                                              #   lower = as.numeric(sealevel_for$lower[,1]),
+                                              #   upper = as.numeric(sealevel_for$upper[,1]))
+                      #  sealevel_model$date <- last(sealevel$date) + 0:5
                         
                 } 
                 
                 if(input$Historical == FALSE){
-                        sealevel <- slice(sealevel, tail(row_number(), 24))
+                      #  sealevel <- slice(sealevel, tail(row_number(), 24))
+                    
+                    
                 }
                 
-                p21 <- sealevel %>% 
-                        ggplot(mapping = aes(x = date, y = gmsl))+
-                        geom_line()+
-                        ylab("Global Mean Sea Level")+
-                        xlab("")+
-                        scale_x_date(date_labels = "%Y")+
-                        labs(title = "Global Mean Sea Levels")+
-                        theme_minimal()
+                #p21 <- sealevel %>% 
+                        #ggplot(mapping = aes(x = date, y = gmsl))+
+                        #geom_line()+
+                        #ylab("Global Mean Sea Level")+
+                        #xlab("")+
+                        #scale_x_date(date_labels = "%Y")+
+                        #labs(title = "Global Mean Sea Levels")+
+                        #theme_minimal()
+            
+           p21 <-  arcticice <- get_icecurves()
+            plot_icecurves(arcticice)
                 
                 if(input$Forecast == TRUE){
-                        p21 <- p21+
-                                geom_line(data = sealevel_model, aes(x = date, y = Value, color = "red"))+
-                                theme(legend.position = "none")
+                        #p21 <- p21+
+                               # geom_line(data = sealevel_model, aes(x = date, y = Value, color = "red"))+
+                                #theme(legend.position = "none")
                         
                 }
                 
@@ -1072,7 +1085,8 @@ server <- function(input, output) {
                 
         })
         
-        output$graphc7 <- renderPlot({plot_paleo()})
+        output$graphc7 <- renderPlot({vostok <- get_paleo
+            plot_paleo(vostok)})
         
         output$graphc8 <- renderPlot({warming_stripes()})
         
